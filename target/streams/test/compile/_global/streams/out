@@ -1,0 +1,16 @@
+[0m[[0m[31merror[0m] [0m[0mC:\Users\RAGGE\Documents\Projects\scala_aoc\day3\src\test\scala\example\Day3Tests.scala:5:21: not found: type DirectionVector[0m
+[0m[[0m[31merror[0m] [0m[0m    val test2 = new DirectionVector(new Vector(201, 0))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0mC:\Users\RAGGE\Documents\Projects\scala_aoc\day3\src\test\scala\example\Day3Tests.scala:12:21: not found: type DirectionVector[0m
+[0m[[0m[31merror[0m] [0m[0m    val test1 = new DirectionVector(new Vector(201, 0))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0mC:\Users\RAGGE\Documents\Projects\scala_aoc\day3\src\test\scala\example\Day3Tests.scala:21:21: not found: type DirectionVector[0m
+[0m[[0m[31merror[0m] [0m[0m    val test1 = new DirectionVector(new Vector(10, 0))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0mC:\Users\RAGGE\Documents\Projects\scala_aoc\day3\src\test\scala\example\Day3Tests.scala:22:21: not found: type DirectionVector[0m
+[0m[[0m[31merror[0m] [0m[0m    val test2 = new DirectionVector(new Vector(0, 10))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0mC:\Users\RAGGE\Documents\Projects\scala_aoc\day3\src\test\scala\example\Day3Tests.scala:23:21: not found: type DirectionVector[0m
+[0m[[0m[31merror[0m] [0m[0m    val test3 = new DirectionVector(new Vector(-10, 0))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m5 errors found[0m
