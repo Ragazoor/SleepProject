@@ -56,11 +56,8 @@ object showSleepData {
 
   // main method
   def main(args: Array[String]): Unit = {
-    try:
-      val dirObject = new File("data")
-      val jsonVector = parseInputFiles(dirObject)
-    finally:
-      dirObject.close()
+    val dirObject = new File("data")
+    val jsonVector = parseInputFiles(dirObject)
     println(jsonVector)
     val garminDataSeq: Seq[GarminDataObject] = 
       jsonVector.zipWithIndex.map {
