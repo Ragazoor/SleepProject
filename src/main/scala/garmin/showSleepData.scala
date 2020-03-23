@@ -32,23 +32,36 @@ case class GarminDataObject(jsonStruct: JsValue) {
 // Factory for Day3 instances
 object showSleepData {
 
+  def preProcessFiles(dirObject: File): Unit = {
+    val files = dirObject.listFiles.filter(_.isFile).toList
+    files.foreach { fileName =>
+      val splitString = Source.fromFile(fileName).mkString.split("[{]").mkString("{sleepDateData: {")
+      val processedString = splitString.split("[}]").mkString("}}") + "}}"
+    }
+  }
+
+  def parseInputFiles(dirObject: File): Vector[JsValue] = {
+    val files = dirObject.listFiles.filter(_.isFile).toList
+    files.flatMap { fileName =>
+      val input = Source.fromFile(fileName).mkString
+      val jsonValue: JsValue = Json.parse(input)
+      (jsonValue \\ "sleepDateData")
+    }.toVector
+  }
+
   def getAccumulatedSleep(garminDataSeq: Seq[GarminDataObject]): Seq[(String, Int)] = {
     val accumulatedSleep = garminDataSeq.scanLeft(0) {case (acc, garminObj) => acc + garminObj.totalSleep}
     garminDataSeq.map(_.wakeUpDate).zip(accumulatedSleep.map(_ / 3600))
   }
 
-  def parseInputFiles(dirName: File): Vector[JsValue] = {
-    val files = dirName.listFiles.filter(_.isFile).toList
-    files.flatMap { fileName =>
-      val input = Source.fromFile(fileName).mkString
-      val jsonValue: JsValue = Json.parse(input)
-      (jsonValue \\ "sleepDateData").toVector
-    }.toVector
-  }
-
   // main method
   def main(args: Array[String]): Unit = {
-    val jsonVector = parseInputFiles()
+    try:
+      val dirObject = new File("data")
+      val jsonVector = parseInputFiles(dirObject)
+    finally:
+      dirObject.close()
+    println(jsonVector)
     val garminDataSeq: Seq[GarminDataObject] = 
       jsonVector.zipWithIndex.map {
         case (date, idx) => GarminDataObject(jsonVector(idx))
