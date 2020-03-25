@@ -144,6 +144,6 @@ object showSleepData {
                                 gridcolor=element.Color.StringColor("black"))
 
     val averagedCanvas = plothandler.BarCanvas(averagedSleep, xBarLabel, yBarLabel, title="Mean hours slept per night")
-    averagedCanvas.plot(fileName="averagedSleep.html")
+    // averagedCanvas.plot(fileName="averagedSleep.html")
   }
 }
