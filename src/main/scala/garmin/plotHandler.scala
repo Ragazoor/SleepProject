@@ -4,12 +4,24 @@ import plotly._, element._, layout._, Plotly._
 import garmin.showSleepData._
 import java.time
 
-case class Canvas(dataSeq: Seq[(String, Int)], val xLabel: Axis, val yLabel: Axis, title: String="") {
-  val trace = Scatter(
-    dataSeq.map(_._1),
-    dataSeq.map(_._2),
-    name=time.LocalDate.parse(dataSeq.head._1).getYear.toString)
+trait Canvas {
+  val title: String
+  val xLabel: Axis
+  val yLabel: Axis
+  val data: Seq[Trace]
 
-  val data = Seq(trace)
-  def plot(): Unit = data.plot(title=title, xaxis=xLabel, yaxis=yLabel)
+  def plot(fileName: String): Unit = data.plot(title=title, xaxis=xLabel, yaxis=yLabel, path=fileName)
+}
+
+case class ScatterCanvas(dataMap: Map[String, Seq[(String, Int)]], val xLabel: Axis, val yLabel: Axis, title: String="") extends Canvas {
+
+  val data = dataMap.map { case (key, data) =>
+    Scatter(data.map(_._1), data.map(_._2), name=key)
+  }.toSeq
+}
+
+case class BarCanvas(dataMap: Map[String, Seq[(String, Int)]], val xLabel: Axis, val yLabel: Axis, title: String="") extends Canvas {
+  val data = dataMap.map { case (key, monthSeq) =>
+    Bar(monthSeq.map(_._1), monthSeq.map(_._2), name=key)
+  }.toSeq
 }

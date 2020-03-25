@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Mean hours slept per night</title>
+<script src="https://cdn.plot.ly/plotly-1.41.3.min.js"></script>
+</head>
+<body>
+<div id="chart"></div>
+<script>
+(function () {
+  var data0 = {"x":["1","2","3"],"name":"2020","y":[504.0,487.0,501.0],"type":"bar"};
+  var data1 = {"x":["12","8","10","11","9"],"name":"2018","y":[478.0,448.0,484.0,474.0,495.0],"type":"bar"};
+  var data2 = {"x":["12","8","4","5","10","2","7","3","11","9","6","1"],"name":"2019","y":[496.0,502.0,486.0,478.0,501.0,430.0,474.0,472.0,468.0,512.0,471.0,452.0],"type":"bar"};
+
+  var data = [data0, data1, data2];
+  var layout = {"title":"Mean hours slept per night","yaxis":{"showgrid":true,"tickvals":[60.0,120.0,180.0,240.0,300.0,360.0,420.0,480.0],"ticktext":["1","2","3","4","5","6","7","8"],"title":"Hours","gridcolor":"black"},"xaxis":{"showgrid":false,"tickvals":[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0],"ticktext":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"title":"Month"}};
+
+  Plotly.plot('chart', data, layout);
+})();
+</script>
+</body>
+</html>
+       
