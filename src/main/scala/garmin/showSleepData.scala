@@ -102,7 +102,7 @@ object ShowSleepData {
 
   def getAvgSleepPerMonth(garminDataMap: Map[String, Seq[Garmin]]): Map[String, Seq[(String, Int)]] = {
 
-    def calculateAverageSeq(garminSeq: Seq[Garmin]) = {
+    def calculateAverageSeq(garminSeq: Seq[Garmin]): Seq[(String, Int)] = {
       garminSeq
       .groupBy(_.wakeUpDate.getMonthValue.toString)
       .map { case (monthKey, garminSeq) => 
@@ -116,7 +116,7 @@ object ShowSleepData {
     }
   }
 
-  def getFilledInSequence(dayOfYearMap: Map[Int, Garmin], minX: Int, maxX: Int) = {
+  def getFilledInSequence(dayOfYearMap: Map[Int, Garmin], minX: Int, maxX: Int): Seq[Garmin] = {
     val yearInt = 
       dayOfYearMap
       .headOption
