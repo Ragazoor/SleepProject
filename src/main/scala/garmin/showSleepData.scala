@@ -23,18 +23,16 @@ case class EmptyGarminObject(year: Int, dayOfYear: Int) extends Garmin {
 case class GarminDataObject(jsonStruct: json.JsValue) extends Garmin{
   val wakeUpDate = time.LocalDate.parse((jsonStruct \\ "calendarDate").head.as[String])
 
-  val sleepStartTime = (jsonStruct \\ "sleepStartTimestampGMT").head.as[String]
-  val sleepEndTime = (jsonStruct \\ "sleepEndTimestampGMT").head.as[String]
+  val sleepStartTime = time.LocalDateTime.parse((jsonStruct \\ "sleepStartTimestampGMT").head.as[String])
+  val sleepEndTime = time.LocalDateTime.parse((jsonStruct \\ "sleepEndTimestampGMT").head.as[String])
 
   val confirmationType = (jsonStruct \\ "sleepWindowConfirmationType").head.as[String]
   val retro = (jsonStruct \\ "retro").head.as[Boolean]
 
-  def getSleepSeconds(tag: String): Int = {
+  private def getSleepSeconds(tag: String): Int = {
     (jsonStruct \\ tag).headOption.getOrElse(json.JsNumber(0)).as[Int]
   }
 
-  // if ConfirmationType "UNCONFIRMED", NO SECONDS
-  private val confirmationTypeIsOk = confirmationType != "UNCONFIRMED"
   val deepSleepSeconds = getSleepSeconds("deepSleepSeconds")
   val lightSleepSeconds = getSleepSeconds("lightSleepSeconds")
   val remSleepSeconds = getSleepSeconds("remSleepSeconds")
@@ -47,19 +45,28 @@ case class GarminDataObject(jsonStruct: json.JsValue) extends Garmin{
   val totalSleep = getTotalSleep()
 }
 // Factory for Day3 instances
-object showSleepData {
+object ShowSleepData {
   val inputDir= "processedData"
   val dataDir= "data"
   val secondsInOneMinute = 60
+
+  def inputDirExists(): Boolean = {
+    val inputDirObj = new File(inputDir)
+    inputDirObj.exists || inputDirObj.mkdir
+  }
 
   def preProcessFiles(dirObject: File): Unit = {
     val files = dirObject.listFiles.filter(_.isFile).toList
     files.foreach { file =>
       val splitString = Source.fromFile(file).mkString.split("[{]").mkString("{\"sleepDateData\": {")
       val processedString = splitString.split("[}]").mkString("}}")
-      val fileWriter = new PrintWriter(inputDir + "/" + file.getName.split("[.]").mkString("_processed."))
-      fileWriter.write(processedString)
-      fileWriter.close()
+      val newFileName = inputDir + "/" + file.getName.split("[.]").mkString("_processed.")
+
+      if (inputDirExists) {
+        val fileWriter = new PrintWriter(newFileName)
+        fileWriter.write(processedString)
+        fileWriter.close()
+      }
     }
   }
 
@@ -72,52 +79,75 @@ object showSleepData {
     }.toVector
   }
 
+  // def getBedtime(garminDataMap: Map[String, Seq[Garmin]]): Map[String, Seq[(String, Int)]] = {
+  //   garminDataMap
+  //   .map { case (key, garminSeq) =>
+  //     val bedtimeSeq = 
+  //     garminSeq
+  //     .flatMap { garmin => 
+  //       Seq(garmin.sleepStartTime.toLocalTime.toString, garmin.sleepEndTime.toLocalTime.toString)
+  //     }
+  //     val 
+  //   }
+  // }
+
   def getAccSleepPerYear(garminDataMap: Map[String, Seq[Garmin]]): Map[String, Seq[(String, Int)]] = {
     garminDataMap
-      .map { case (key, garminSeq) =>
-        val accSeq = garminSeq.scanLeft(0) {case (acc, garminObj) => acc + garminObj.totalSleep}
-        val xyTuples = garminSeq.map(_.wakeUpDate.getDayOfYear.toString).zip(accSeq.map(_ / 3600))
-        (key, xyTuples)
-      }
+    .map { case (key, garminSeq) =>
+      val accSeq = garminSeq.scanLeft(0) {case (acc, garminObj) => acc + garminObj.totalSleep}
+      val xyTuples = garminSeq.map(_.wakeUpDate.getDayOfYear.toString).zip(accSeq.map(_ / secondsInOneMinute*secondsInOneMinute))
+      (key, xyTuples)
+    }
   }
 
   def getAvgSleepPerMonth(garminDataMap: Map[String, Seq[Garmin]]): Map[String, Seq[(String, Int)]] = {
+
+    def calculateAverageSeq(garminSeq: Seq[Garmin]) = {
+      garminSeq
+      .groupBy(_.wakeUpDate.getMonthValue.toString)
+      .map { case (monthKey, garminSeq) => 
+        (monthKey, garminSeq.foldLeft(0)(_+_.totalSleep) / garminSeq.length / secondsInOneMinute)
+      }.toSeq
+    }
+
     garminDataMap
-      .map { case (yearKey, garmin) =>
-        val avgSeq: Seq[(String, Int)] = //TODO: Redo into nested function
-          garmin
-          .filter(_.totalSleep != 0)
-          .groupBy(_.wakeUpDate.getMonthValue.toString)
-          .map { case (monthKey, garminSeq) => 
-            (monthKey, garminSeq.foldLeft(0)(_+_.totalSleep) / garminSeq.length / secondsInOneMinute)
-          }.toSeq
-        (yearKey, avgSeq)
+    .map { case (yearKey, garmin) =>
+      (yearKey, calculateAverageSeq(garmin))
+    }
+  }
+
+  def getFilledInSequence(dayOfYearMap: Map[Int, Garmin], minX: Int, maxX: Int) = {
+    val yearInt = 
+      dayOfYearMap
+      .headOption
+      .map{ case (_, garminObj) => garminObj.wakeUpDate.getYear}.getOrElse(1986)
+
+    (minX to maxX)
+    .map { dayOfYear =>
+      dayOfYearMap.get(dayOfYear) match {
+        case Some(garmin) => garmin
+        case None => EmptyGarminObject(yearInt, dayOfYear)
       }
+    }.toSeq
   }
 
   // main method
   def main(args: Array[String]): Unit = {
-    // val dirFile = new File(dataDir)
-    // preProcessFiles(dirFile)
+    val dirFile = new File(dataDir)
+    preProcessFiles(dirFile)
     val inputFile = new File(inputDir)
     val jsonVector = parseInputFiles(inputFile)
 
     val garminDataMap: Map[String, Seq[Garmin]] = 
       jsonVector.zipWithIndex.map {
         case (date, idx) => GarminDataObject(jsonVector(idx))
-      }.groupBy(_.wakeUpDate.getYear.toString) // group the GarminObjects per year in a map (easier to work with)
+      }.groupBy(_.wakeUpDate.getYear.toString) // group the GarminObjects per year in a map
       .map { case (yearStr, garminSeq) => // Add default values to dates that has no values
         val dayOfYearMap = garminSeq.map(garminObj => (garminObj.wakeUpDate.getDayOfYear, garminObj)).toMap
         val minX = dayOfYearMap.map(_._1).min
         val maxX = dayOfYearMap.map(_._1).max
-        val newXYSeq: Seq[Garmin] = (minX to maxX)
-          .map { dayOfYear =>
-          dayOfYearMap.get(dayOfYear) match {
-            case Some(garmin) => garmin
-            case None => EmptyGarminObject(yearStr.toInt, dayOfYear)
-          }
-        }.toSeq
-        (yearStr, newXYSeq)
+        // If some dayOfYear is missing between min and max, fill it in
+        (yearStr, getFilledInSequence(dayOfYearMap, minX, maxX)) 
       }
 
     // Create canvas for accumulated sleep
@@ -128,7 +158,6 @@ object showSleepData {
                                     ticktext=Seq("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
     val yScatterLabel = layout.Axis(title="Hours", showgrid=false)
     val accumulatedCanvas = plothandler.ScatterCanvas(accumulatedSleep, xScatterLabel, yScatterLabel, title="Cummulative sleep")
-    // accumulatedCanvas.plot(fileName="accumulatedSleep.html")
 
     //Create canvas for average sleep
     val averagedSleep = getAvgSleepPerMonth(garminDataMap)
@@ -142,8 +171,25 @@ object showSleepData {
                                 tickvals=(1 to 8).map(_*60),
                                 ticktext=(1 to 8).map(_.toString),
                                 gridcolor=element.Color.StringColor("black"))
-
     val averagedCanvas = plothandler.BarCanvas(averagedSleep, xBarLabel, yBarLabel, title="Mean hours slept per night")
+
+    //Create canvas for when I go to sleep
+    // val bedtimeMap = getBedtime(garminDataMap)
+    val xHistLabel = layout.Axis(title="Time of day",
+                                showgrid=false)
+                                // tickvals=Seq(1,2,3,4,5,6,7,8,9,10,11,12),
+                                // ticktext=Seq("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+
+    val yHistLabel = layout.Axis(title="Occurences",
+                                showgrid=false)
+                                // tickvals=(1 to 8).map(_*60),
+                                // ticktext=(1 to 8).map(_.toString),
+                                // gridcolor=element.Color.StringColor("black"))
+    // val histCanvas = plothandler.HistogramCanvas(bedtimeMap, xHistLabel, yHistLabel, title="When I go to sleep")
+
+
+    // accumulatedCanvas.plot(fileName="accumulatedSleep.html")
     // averagedCanvas.plot(fileName="averagedSleep.html")
+    // histCanvas.plot(fileName="bedtime.html")
   }
 }
